@@ -5,4 +5,7 @@ heis
 *.o
 *.exe
 
+html/
+latex/
+
 build/
