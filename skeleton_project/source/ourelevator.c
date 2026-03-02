@@ -1,7 +1,8 @@
-#include "elevator.h"
+#include "ourelevator.h"
 #include "driver/elevio.h"
 #include "stateMachine.h"
 #include "timer.h"
+#include <stdio.h>
 
 bool floorDefined(Elevator *elev)
 {
@@ -11,15 +12,23 @@ bool floorDefined(Elevator *elev)
 void init(Elevator *elev)
 {
     int floor = elevio_floorSensor();
-    if (floorDefined(elev))
+    if (!floorDefined(elev))
     {
-        elevio_floorIndicator(floor);
+        elevio_motorDirection(DIRN_DOWN);
     }
-    while (floor != 0)
+    if (floor != 0)
     {
-        elev->currentDirection = DIRN_DOWN;
+        elevio_motorDirection(DIRN_DOWN);
     }
+    while (elevio_floorSensor() != 0)
+    {
+    }
+    elevio_motorDirection(DIRN_STOP);
+
+    elev->currentFloor = 0;
     elev->currentDirection = DIRN_STOP;
+    elevio_floorIndicator(0);
+    printf("Elevator initialized!");
 }
 
 bool secure(Elevator *elev)
@@ -73,19 +82,27 @@ bool reqIsEmpty(Elevator *elev)
             empty += elev->requests[f][b];
         }
     }
-    return !empty; // returnerer True dersom alle tallene er 0, altså en tom matrise.
+    if (empty == 0)
+    {
+        return true;
+    }
+    else
+    {
+        return false;
+    }
 }
 
 void emergencyStop(Elevator *elev)
 {
     if (elevio_stopButton())
     {
+        elev->currentDirection = DIRN_STOP;
+        elevio_motorDirection(elev->currentDirection);
         elevio_stopLamp(1);
         clearRequests(elev);
-
-        while (elevio_stopButton())
-        {
-        }
+    }
+    else
+    {
         elevio_stopLamp(0);
     }
 }
@@ -96,37 +113,26 @@ void updateOutputs(Elevator *elev)
     if (floorDefined(elev))
     {
         elev->currentFloor = floor;
+        elevio_floorIndicator(floor);
     }
-    elevio_floorIndicator(floor);
 
     for (int f = 0; f < N_FLOORS; f++)
     {
         for (int b = 0; b < N_BUTTONS; b++)
         {
-            int floor, button = elev->requests[f][b];
-            if (elevio_callButton(f, b))
-            {
-                elevio_buttonLamp(floor, button, 1);
-            }
+            elevio_buttonLamp(f, b, elev->requests[f][b]);
         }
     }
 
-    while (elevio_stopButton())
-    {
-        elevio_stopLamp(1);
-    }
-
-    while (elev->state == DOOR_OPEN)
-    {
-        elevio_doorOpenLamp(1);
-    }
+    elevio_stopLamp(elevio_stopButton());
+    elevio_doorOpenLamp(elev->state == DOOR_OPEN);
 }
 
 bool requestsAbove(Elevator *elev)
 {
     int req = 0;
     int currentFloor = elevio_floorSensor();
-    for (int f = currentFloor; f < N_FLOORS; f++)
+    for (int f = currentFloor + 1; f < N_FLOORS; f++)
     {
         for (int b = 0; b < N_BUTTONS; b++)
         {
@@ -140,21 +146,21 @@ bool requestsUnder(Elevator *elev)
 {
     int req = 0;
     int currentFloor = elevio_floorSensor();
-    for (int f = currentFloor; f >= 0; f--)
+    for (int f = currentFloor - 1; f >= 0; f--)
     {
         for (int b = 0; b < N_BUTTONS; b++)
         {
             req += elev->requests[f][b];
         }
     }
-    return req; // returnerer true dersom det er noen bestillinger under
+    return req > 0; // returnerer true dersom det er noen bestillinger under
 }
 
 bool shouldStop(Elevator *elev)
 {
     if (floorDefined(elev))
     {
-        for (int b = 0; b < 2; b++)
+        for (int b = 0; b < N_BUTTONS; b++)
         {
             if (elev->requests[elev->currentFloor][b] == 1)
             {
@@ -198,6 +204,18 @@ MotorDirection chooseDirection(Elevator *elev)
         if (reqIsEmpty(elev))
         {
             elev->currentDirection = DIRN_STOP;
+            return DIRN_STOP;
+        }
+        if (elev->currentDirection == DIRN_STOP)
+        {
+            if (requestsAbove(elev))
+            {
+                elev->currentDirection = DIRN_UP;
+            }
+            if (requestsUnder(elev))
+            {
+                elev->currentDirection = DIRN_DOWN;
+            }
         }
 
         if (elev->currentDirection == DIRN_UP)

@@ -12,12 +12,12 @@ typedef struct
 } Elevator;
 
 // Elevator functions
-void init();
-bool floorDefined();
-bool secure();
+void init(Elevator *elev);
+bool floorDefined(Elevator *elev);
+bool secure(Elevator *elev);
+void addRequests(Elevator *elev);
 void clearRequests(Elevator *elev);
-bool secure();
-void emergencyStop();
+void emergencyStop(Elevator *elev);
 void updateRequests(Elevator *elev);
 void removeRequest(Elevator *elev);
 void handleRequests(Elevator *elev);

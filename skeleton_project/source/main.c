@@ -3,7 +3,7 @@
 #include <signal.h>
 #include <time.h>
 #include "driver/elevio.h"
-#include "elevator.h"
+#include "ourelevator.h"
 #include "stateMachine.h"
 
 int main()
@@ -16,8 +16,13 @@ int main()
 
     while (1)
     {
+        addRequests(elev);
         StateMachine(elev);
         updateOutputs(elev);
+        struct timespec ts;
+        ts.tv_sec = 0;
+        ts.tv_nsec = 20000000;
+        nanosleep(&ts, NULL);
         // legge til en delay
     }
 

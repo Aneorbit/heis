@@ -1,10 +1,10 @@
-#include <stateMachine.h>
-#include <elevator.h>
-#include <timer.h>
+#include "stateMachine.h"
+#include "ourelevator.h"
+#include "timer.h"
 
 void stateIdle(Elevator *elev)
 {
-    if (reqIsEmpty)
+    if (reqIsEmpty(elev))
     {
         elev->state = IDLE;
     }
@@ -16,19 +16,34 @@ void stateIdle(Elevator *elev)
 
 void stateMoving(Elevator *elev)
 {
+    elev->currentDirection = chooseDirection(elev);
+    elevio_motorDirection(elev->currentDirection);
 
     if (shouldStop(elev))
     {
         elev->state = STOP;
     }
-    elev->currentDirection = chooseDirection(elev);
-    if (elevio_stopButton() && floorDefined() || (elevio_obstruction()))
+
+    if (elevio_stopButton())
+    {
+        emergencyStop(elev);
+        elev->state = STOP;
+        return;
+    }
+    if (floorDefined(elev) && shouldStop(elev))
     {
         elev->state = DOOR_OPEN;
+        elevio_motorDirection(DIRN_STOP);
+        removeRequest(elev);
     }
-    while (elevio_stopButton() && !floorDefined())
+    else
     {
         elev->state = STOP;
+    }
+
+    if (floorDefined(elev) && elevio_obstruction())
+    {
+        elev->state = DOOR_OPEN;
     }
 };
 
@@ -45,15 +60,21 @@ void stateStop(Elevator *elev)
 void stateDoorOpen(Elevator *elev)
 {
     elev->currentDirection = DIRN_STOP;
+    elevio_motorDirection(elev->currentDirection);
 
-    while ((elevio_stopButton() && floorDefined()) || elevio_obstruction() && floorDefined())
-    {
-        elev->state = DOOR_OPEN;
-    }
+    wait3sec();
 
-    wait3sec(elev);
+    // for(int i = 0; i < 3; i++){
+    addRequests(elev);
+    // elevio_motorDirection(elev->currentDirection);
+    // struct timespec ts;
+    // ts.tv_sec = 0;
+    // ts.tv_nsec = 1000000000; //1000 ms
+    // nanosleep(&ts, NULL);
+    //}
+    removeRequest(elev);
 
-    if (reqIsEmpty)
+    if (reqIsEmpty(elev))
     {
         elev->state = IDLE;
     }
@@ -61,7 +82,8 @@ void stateDoorOpen(Elevator *elev)
     {
         elev->state = MOVING;
     }
-    while (elevio_obstruction())
+
+    if (elevio_obstruction())
     {
         elev->state = DOOR_OPEN;
     }
