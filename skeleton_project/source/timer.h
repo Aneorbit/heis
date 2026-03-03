@@ -1,4 +1,6 @@
 #pragma once
-#include <time.h>
+#include "ourelevator.h"
+#include <stdbool.h>
 
-void wait3sec();
+void startDoorTimer(Elevator *elev);
+int doorTimerExpired(Elevator *elev);

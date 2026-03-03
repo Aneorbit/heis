@@ -16,9 +16,16 @@ int main()
 
     while (1)
     {
+
         addRequests(elev);
+
+        if (elevio_stopButton())
+        {
+            emergencyStop(elev);
+        }
         StateMachine(elev);
         updateOutputs(elev);
+
         struct timespec ts;
         ts.tv_sec = 0;
         ts.tv_nsec = 20000000;

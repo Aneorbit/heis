@@ -1,6 +1,7 @@
 #pragma once
 #include "driver/elevio.h"
 #include <stdbool.h>
+#include <time.h>
 
 // Elevator struct
 typedef struct
@@ -9,6 +10,9 @@ typedef struct
     int currentFloor;
     MotorDirection currentDirection;
     int requests[N_FLOORS][N_BUTTONS];
+    struct timespec doorOpenTime;
+    int doorTimerOpen;
+    int doorTimerActive;
 } Elevator;
 
 // Elevator functions
