@@ -3,7 +3,7 @@
 #include <stdbool.h>
 #include <time.h>
 
-// Elevator struct
+
 typedef struct
 {
     int state;
@@ -15,7 +15,7 @@ typedef struct
     int doorTimerActive;
 } Elevator;
 
-// Elevator functions
+
 void init(Elevator *elev);
 bool floorDefined(Elevator *elev);
 bool secure(Elevator *elev);

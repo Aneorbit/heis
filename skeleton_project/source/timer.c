@@ -4,14 +4,12 @@
 #include <stdlib.h>
 #include "driver/elevio.h"
 
-void startDoorTimer(Elevator *elev)
-{
+void startDoorTimer(Elevator *elev){
     clock_gettime(CLOCK_MONOTONIC, &elev->doorOpenTime);
     elev->doorTimerActive = 1;
 }
 
-int doorTimerExpired(Elevator *elev)
-{
+int doorTimerExpired(Elevator *elev){
     if (!elev->doorTimerActive)
         return 0;
 
